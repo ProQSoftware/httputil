@@ -7,29 +7,8 @@ import (
 	"strings"
 )
 
-func SendRequest(method, url, contentType string, body io.Reader) (resp *http.Response, err error) {
-	method = strings.ToUpper(method)
-	switch method {
-	case "POST":
-		resp, err = http.Post(url, contentType, body)
-	case "GET":
-		if body == nil {
-			resp, err = http.Get(url)
-			break
-		}
-		fallthrough
-	default:
-		var req *http.Request
-
-		if req, err = http.NewRequest(method, url, body); err != nil {
-			err = NewError(http.StatusInternalServerError, "text/html", err.Error())
-			return
-		} else if body != nil {
-			req.Header.Add("Content-Type", contentType)
-		}
-
-		resp, err = http.DefaultClient.Do(req)
-	}
+func SendHTTPRequest(req *http.Request) (resp *http.Response, err error) {
+	resp, err = http.DefaultClient.Do(req)
 
 	if err != nil {
 		err = NewError(http.StatusServiceUnavailable, "text/html", err.Error())
@@ -46,4 +25,16 @@ func SendRequest(method, url, contentType string, body io.Reader) (resp *http.Re
 	}
 
 	return
+}
+
+func SendRequest(method, url, contentType string, body io.Reader) (resp *http.Response, err error) {
+	method = strings.ToUpper(method)
+	var req *http.Request
+	if req, err = http.NewRequest(method, url, body); err != nil {
+		err = NewError(http.StatusInternalServerError, "text/html", err.Error())
+		return
+	} else if body != nil {
+		req.Header.Add("Content-Type", contentType)
+	}
+	return SendHTTPRequest(req)
 }
